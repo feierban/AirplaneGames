@@ -4,94 +4,129 @@ window.requestAnimationFrame = window.requestAnimationFrame||function(fn){
 }
 window.cancelAnimationFrame = window.cancelAnimationFrame||clearTimeout;
 (function(){
+	var gaming = false;
 	var oBox = document.getElementById("box");
 	var oWrap = document.getElementById("wrap");
-	var leave = oWrap.getElementsByTagName("div");
 	var oScore = document.getElementById("score");
-	var length = leave.length;
 	var boxTop = oBox.offsetTop;
 	var boxLeft = oBox.offsetLeft;
 	var oBreak = document.getElementById("break");
 	//var oBreak = document.getElementsByTagName("i")[0];
 	oBox.score = 0;
+	disableMouse();
+	reset();
+
+
 	//禁止选中禁止拖拽
-	(function(){
-		document.onselectstart = function(){
-			return false;
-		}
-		document.ondrag = function(){
-			return false;
-		}
-	})();
+	function disableMouse(){
+		function _disable() {return false;}
+		document.onmouseenter = _disable;
+		document.onmousedown = _disable;
+		document.onmouseleave = _disable;
+		document.onmousemove =  _disable;
+		document.onselectstart = _disable;
+		document.ondrag = _disable;
+	};
 	//初始化
-	init();
 	function init(){
-		var arrImg = ["bg_1.jpg","bg_2.jpg","bg_3.jpg","bg_4.jpg"];
+		var leave = oWrap.getElementsByTagName("div");
+		var length = leave.length;
 		for(var i=0;i<length;i++){
 			(function(i){
-				leave[i].onclick = function(e){
-					oWrap.innerHTML = "";
-					oScore.style.display = "block";
-					oWrap.style.backgroundImage = "url(images/"+arrImg[i]+")";
-					(function bgMove(){
-						oWrap.bgPosY = oWrap.bgPosY || 0;
-						oWrap.bgPosY++;
-						oWrap.style.backgroundPositionY = oWrap.bgPosY + "px";
-						oWrap.bgTimer = requestAnimationFrame(bgMove);
-					})();
-					var e = e || window.event;
-					var cX = e.clientX - boxLeft;
-					var cY = e.clientY - boxTop;
-					var client = {x:cX,y:cY};
-					creatPlane(client,i);
+				leave[i].onkeyup = function(e){
+					if (e.keyCode == 13) {
+						enterGameWithLevel(i);
+						return false;
+					}
+					if (e.keyCode >= 37 && e.keyCode <= 40) {
+						changeSelect(leave, i, e.keyCode);
+						return false;
+					}
 				};
 			})(i)
 		}
+		gaming = false;
+		leave[0].focus();
 	};
-	//reset按钮点击
-	(function reset(){
-		var oREset = document.getElementById("reset");
-		var oFinal = document.getElementById("final");
-		oREset.onclick = function(){
-			oBox.score = 0;
-			oScore.innerHTML = 0;
-			oFinal.style.display = "none";
-			cancelAnimationFrame(oWrap.bgTimer)
-			oWrap.innerHTML = '<h3 class="title">AirplaneGameV1.0</h3>'+
-					    	'<div class="d1">简单模式</div>'+
-					    	'<div class="d2">中等模式</div>'+
-					    	'<div class="d3">困难模式</div>'+
-					    	'<div class="d4">极速模式</div>'
-			init();//重新初始化
+	//选择其他游戏
+	function changeSelect(leave, i, key) {
+		console.log(i + " " + key);
+		var min = 0;
+		var max = leave.length - 1;
+		var tar = i;
+		if (key == 38) {
+			tar = Math.max(i - 1, min);
 		}
-	})();
+		if (key == 40) {
+			tar = Math.min(i + 1, max);
+		}
+		leave[tar].focus();
+	}
+	//开始游戏
+	function enterGameWithLevel(i) {
+		var arrImg = ["bg_1.jpg","bg_2.jpg","bg_3.jpg","bg_4.jpg"];
+		oWrap.innerHTML = "";
+		oScore.style.display = "block";
+		oWrap.style.backgroundImage = "url(images/"+arrImg[i]+")";
+		(function bgMove(){
+			oWrap.bgPosY = oWrap.bgPosY || 0;
+			oWrap.bgPosY++;
+			oWrap.style.backgroundPositionY = oWrap.bgPosY + "px";
+			oWrap.bgTimer = requestAnimationFrame(bgMove);
+		})();
+		creatPlane(i);
+	}
+
+	//reset按钮点击
+	function reset(){
+		var oFinal = document.getElementById("final");
+		oBox.score = 0;
+		oScore.innerHTML = 0;
+		oFinal.style.display = "none";
+		cancelAnimationFrame(oWrap.bgTimer)
+		oWrap.innerHTML = '<h3 class="title">AirplaneGameV1.0</h3>'+
+				    	'<div class="d1"  tabindex="1" >简单模式</div>'+
+				    	'<div class="d2"  tabindex="2" >中等模式</div>'+
+				    	'<div class="d3"  tabindex="3" >困难模式</div>'+
+				    	'<div class="d4"  tabindex="4" >极速模式</div>'
+		init();//重新初始化
+	}
 	//生成我军飞机
-	function creatPlane(client,i){
+	function creatPlane(i){
 		var Img = new Image();
 		Img.className = "plane";
 		Img.src = "images/plane_1.png";
 		Img.width = 100;
 		Img.height = 90;
 		oWrap.appendChild(Img);
-		Img.style.top = client.y - Img.height/2 + "px";
-		Img.style.left = client.x - Img.width/2 + "px";
+		Img.style.top = oWrap.offsetHeight - Img.height/2 + "px";
+		Img.style.left = oWrap.offsetWidth/2 - Img.width/2 + "px";
 		var maxTop = oWrap.offsetHeight - Img.height/2;
 		var minTop = 0;
 		var maxLeft = oWrap.offsetWidth - Img.width/2;
 		var minLeft = -Img.offsetHeight/2;
-		document.onmousemove = function(e){
-			e = e || window.event;
-			var left = e.clientX -  boxLeft- Img.width/2;
-			var top = e.clientY - boxTop - Img.height/2;
-			left = Math.min(left,maxLeft);
-			left = Math.max(left,minLeft);
-			top = Math.min(top,maxTop);
-			top = Math.max(top,minTop);
+		document.onkeydown = function(e){
+			if (!gaming) {return true;}
+			console.log(e.keyCode + "/" + Img.style.left + "/" + Img.style.top);
+			var left = parseInt(Img.style.left);
+			var top = parseInt(Img.style.top);
+			var keyCode = e.keyCode;
+			if (keyCode == 37) {
+				left = Math.max(minLeft, left - 20);
+			} else if (keyCode == 38) {
+				top = Math.max(minTop, top - 20);
+			} else if (keyCode == 39) {
+				left = Math.min(maxLeft, left + 20);
+			} else if (keyCode == 40) {
+				top = Math.min(maxTop, top + 20);
+			}
 			Img.style.left = left + "px";
 			Img.style.top = top + "px";
+			return false;
 		}
 		creatBullet(Img,i);//生成子弹
 		createEnemy(Img,i);//生成敌军
+		gaming = true;
 	}
 	//生成子弹
 	function creatBullet(plane,i){
@@ -218,7 +253,7 @@ window.cancelAnimationFrame = window.cancelAnimationFrame||clearTimeout;
 						oWrap.removeChild(plane);//移除敌机
 						oWrap.removeChild(ePlane);//移除我机
 						setTimeout(gameover,2000); //游戏结束
-						document.onmousemove = null;//清除鼠标移动事件
+						document.onkeydown = null;//清除键盘事件
 						return;
 					}
 					requestAnimationFrame(m);
@@ -267,6 +302,16 @@ window.cancelAnimationFrame = window.cancelAnimationFrame||clearTimeout;
 		clearInterval(oWrap.enemyTimer);//停止敌机生成
 		oScore.style.display = "none";
 		oFinal.style.display = "block";
+		var oREset = document.getElementById("reset");
+		oREset.tabIndex = 1;
+		oREset.focus();
+		oREset.onkeyup = function(e) {
+			if (e.keyCode == 13) {
+				oREset.onkeydown = null;
+				reset();
+				return false;
+			}
+		};
 		oTotal.innerHTML = oBox.score;
 		var honor;
 		var score = oBox.score;
@@ -333,21 +378,21 @@ window.cancelAnimationFrame = window.cancelAnimationFrame||clearTimeout;
 	}
 	//获取类名兼容ie8-
 	function getClass(obj){
-			if(window.getElementsByClassName){
-				return document.getElementsByClassName("obj");
-			}else{
-				var all = document.getElementsByTagName("*");
-				var arr = [];
-				for(var i=0;i<all.length;i++){
-				if(all[i].className == obj){
-					arr.push(all[i]);
-				}
-				}
-				return arr;
+		if(window.getElementsByClassName){
+			return document.getElementsByClassName("obj");
+		}else{
+			var all = document.getElementsByTagName("*");
+			var arr = [];
+			for(var i=0;i<all.length;i++){
+			if(all[i].className == obj){
+				arr.push(all[i]);
 			}
+			}
+			return arr;
 		}
+	}
 
-		//设置cookie
+	//设置cookie
 	function setCookie(json,time){
 		var date = new Date(new Date().getTime() + time*24*60*60*1000).toGMTString();
 		for(var key in json){
